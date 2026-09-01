@@ -8,29 +8,15 @@ async function processScormPackage(file) {
 
     const packageId = uuidv4();
 
-    const packageDirectory = path.join(
-        __dirname,
-        "../storage/scorm",
-        packageId
-    );
+    const packageDirectory = path.join( __dirname, "../storage/scorm", packageId );
 
-    await fs.mkdir(
-        packageDirectory,
-        {
-            recursive: true
-        }
-    );
+    await fs.mkdir( packageDirectory, { recursive: true } );
 
     const zip = new AdmZip(file.path);
 
-    zip.extractAllTo(
-        packageDirectory,
-        true
-    );
+    zip.extractAllTo( packageDirectory, true );
 
-    const manifestPath = await findManifest(
-        packageDirectory
-    );
+    const manifestPath = await findManifest( packageDirectory );
 
     if (!manifestPath) {
         throw new Error(
@@ -38,26 +24,15 @@ async function processScormPackage(file) {
         );
     }
 
-    const manifestContent = await fs.readFile(
-        manifestPath,
-        "utf-8"
-    );
+    const manifestContent = await fs.readFile( manifestPath, "utf-8" );
 
-    const manifest = await parseStringPromise(
-        manifestContent
-    );
+    const manifest = await parseStringPromise( manifestContent );
 
-    const scormVersion = detectScormVersion(
-        manifestContent
-    );
+    const scormVersion = detectScormVersion( manifestContent );
 
-    const courseInfo = extractCourseInfo(
-        manifest
-    );
+    const courseInfo = extractCourseInfo( manifest );
 
-    const launchFile = findLaunchFile(
-        manifest
-    );
+    const launchFile = findLaunchFile( manifest );
 
     return {
         packageId,
@@ -71,32 +46,19 @@ async function processScormPackage(file) {
 //ims manifiest function
 async function findManifest(directory) {
 
-    const entries = await fs.readdir(
-        directory,
-        {
-            withFileTypes: true
-        }
-    );
+    const entries = await fs.readdir( directory, { withFileTypes: true } );
 
     for (const entry of entries) {
 
-        const fullPath = path.join(
-            directory,
-            entry.name
-        );
+        const fullPath = path.join( directory, entry.name );
 
-        if (
-            entry.isFile() &&
-            entry.name.toLowerCase() === "imsmanifest.xml"
-        ) {
+        if ( entry.isFile() && entry.name.toLowerCase() === "imsmanifest.xml" ) {
             return fullPath;
         }
 
         if (entry.isDirectory()) {
 
-            const result = await findManifest(
-                fullPath
-            );
+            const result = await findManifest( fullPath );
 
             if (result) {
                 return result;
@@ -108,24 +70,13 @@ async function findManifest(directory) {
 }
 
 //detect the scorm version 
-function detectScormVersion(
-    manifestContent
-) {
-
-    if (
-        manifestContent.includes(
-            "adlcp:scormType"
-        )
-    ) {
+function detectScormVersion( manifestContent ) {
+if ( manifestContent.includes( "adlcp:scormType" ) ) {
 
         return "SCORM 2004";
     }
 
-    if (
-        manifestContent.includes(
-            "adlcp:scormtype"
-        )
-    ) {
+    if ( manifestContent.includes( "adlcp:scormtype" ) ) {
 
         return "SCORM 1.2";
     }
@@ -134,52 +85,33 @@ function detectScormVersion(
 }
 
 //extract the information of course or unzip the zip course file
-function extractCourseInfo(
-    manifest
-) {
+function extractCourseInfo( manifest ) {
 
-    const metadata =
-        manifest.manifest?.metadata?.[0];
+    const metadata = manifest.manifest?.metadata?.[0];
 
-    const organizations =
-        manifest.manifest?.organizations?.[0];
+    const organizations = manifest.manifest?.organizations?.[0];
 
-    const organization =
-        organizations?.organization?.[0];
+    const organization = organizations?.organization?.[0];
 
-    const title =
-        organization?.title?.[0] ||
-        "Untitled SCORM Course";
+    const title = organization?.title?.[0] || "Untitled SCORM Course";
 
-    return {
-        title,
-        identifier:
-            organization?.$?.identifier || null
-    };
+    return { title, identifier: organization?.$?.identifier || null };
 }
 
 //launch the course 
-function findLaunchFile(
-    manifest
-) {
+function findLaunchFile( manifest ) {
 
-    const resources =
-        manifest.manifest?.resources?.[0];
+    const resources = manifest.manifest?.resources?.[0];
 
-    const resourceList =
-        resources?.resource || [];
+    const resourceList = resources?.resource || [];
 
     for (const resource of resourceList) {
 
-        const attributes =
-            resource.$ || {};
+        const attributes = resource.$ || {};
 
-        const href =
-            attributes.href;
+        const href = attributes.href;
 
-        if (!href) {
-            continue;
-        }
+        if (!href) { continue; }
 
         return href;
     }
